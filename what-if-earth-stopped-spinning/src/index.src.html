@@ -1,7 +1,7 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8">
+<html lang="th"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Earth Stops Spinning</title>
+<title>ถ้าโลกหยุดหมุน</title>
 <style>
 html,body{margin:0;background:#050b16;color:#8fd8e6;font-family:sans-serif}
 #c{display:block;width:100%;max-width:1920px;height:auto;margin:0 auto}
@@ -17,7 +17,7 @@ body.render #ui{display:none}
 /* ==== data (inlined at build) ==== */
 const WORDS=/*@WORDS@*/null;
 const GEO=/*@GEO@*/null;
-const FONT_B64='/*@FONT@*/';
+const FONT_B64='/*@FONT@*/', FONT_TH5='/*@FONT_TH5@*/', FONT_TH6='/*@FONT_TH6@*/';
 
 /* ==== constants ==== */
 const W=1920,H=1080, CY='#8fd8e6', GOLD='#ffd98a', WHITE='#ffffff';
@@ -119,8 +119,10 @@ function camera(t){
 const toS=(c,x,y)=>({x:(x-c.x)*c.z+W/2+c.sx, y:(y-c.y)*c.z+H/2});
 
 /* ==== fonts / text ==== */
-function font(size,weight=700,spacing=4){g.font=`${weight} ${size}px Fredoka`; g.letterSpacing=spacing+'px';}
-function tw(text,size,weight=700,spacing=4){font(size,weight,spacing);return g.measureText(text).width-spacing;}
+function font(size,weight=700,spacing=4){g.font=`${weight} ${size}px Fredoka, Mitr`; g.letterSpacing=spacing+'px';}
+const TH=/[\u0E00-\u0E7F]/, lsp=(text,sp)=>TH.test(text)?Math.min(sp,1):sp;
+function tw(text,size,weight=700,spacing=4){spacing=lsp(text,spacing);font(size,weight,spacing);return g.measureText(text).width-spacing;}
+const GRAPH=new Intl.Segmenter('th',{granularity:'grapheme'}), graphemes=s=>[...GRAPH.segment(s)].map(x=>x.segment);
 function capsule(ctx,x,y,w,h,r){r=Math.min(r,h/2,w/2);ctx.beginPath();ctx.roundRect(x,y,w,h,r);}
 // text line that slides up 1.3x its height through a clip (ease-out-quint); exits upward
 function slideText(t,text,cx,base,size,color,weight,spacing,tIn,tOut,align='center'){
@@ -128,8 +130,8 @@ function slideText(t,text,cx,base,size,color,weight,spacing,tIn,tOut,align='cent
   if(ui<=0||uo>=1) return 0;
   const w=tw(text,size,weight,spacing);
   const x=align==='center'?cx-w/2:cx;
-  g.save(); g.beginPath(); g.rect(x-size,base-size*0.92,w+2*size,h+size*0.18); g.clip();
-  g.fillStyle=color; g.textAlign='left'; g.textBaseline='alphabetic'; font(size,weight,spacing);
+  g.save(); g.beginPath(); g.rect(x-size,base-size*1.12,w+2*size,h+size*0.48); g.clip();
+  g.fillStyle=color; g.textAlign='left'; g.textBaseline='alphabetic'; font(size,weight,lsp(text,spacing));
   g.fillText(text,x,base+(1-ui)*1.3*h-uo*1.3*h);
   g.restore(); return w;
 }
@@ -165,7 +167,7 @@ function arcText(t,text,cx,cy,r,a0,size,color,tIn,alpha=1){
   font(size,700,0); g.save(); g.globalAlpha=alpha; g.fillStyle=color; g.textAlign='center'; g.textBaseline='alphabetic';
   g.beginPath(); g.arc(cx,cy,r+size*1.5,0,Math.PI*2); g.arc(cx,cy,r+2,0,Math.PI*2,true); g.clip();
   let a=a0; const sp=5;
-  [...text].forEach((ch,i)=>{const w=g.measureText(ch).width+sp, da=w/r, u=easeOutQuint((t-tIn-i*.03)/.55);
+  graphemes(text).forEach((ch,i)=>{const w=g.measureText(ch).width+sp, da=w/r, u=easeOutQuint((t-tIn-i*.03)/.55);
     const rr=r+6-(1-u)*1.3*size; const m=a+da/2;
     g.save(); g.translate(cx+Math.cos(m)*rr,cy+Math.sin(m)*rr); g.rotate(m+Math.PI/2); g.fillText(ch,0,0); g.restore(); a+=da;});
   g.restore();
@@ -396,7 +398,7 @@ function equatorLine(E,R,sp,t){
   for(let j=0;j<=N*u;j++){ const va=-Math.PI/2+Math.PI*j/N; const p=proj(E,R*1.005,0,anchorLon(va,sp),sp); if(p.z<0){on=false;continue;} on?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y); on=true; }
   g.stroke(); g.restore();
 }
-function youSign(t,E,R,sp,lat,lon,t0,t1,playT,label='YOU'){
+function youSign(t,E,R,sp,lat,lon,t0,t1,playT,label='คุณ'){
   if(t<t0-0.01||t>t1+0.4) return null;
   const p=proj(E,R,lat,lon,sp); if(p.z<-.05) return null;
   const drop=-260*(1-springStep(t-t0,.45,14)), sq=.22*springImp(t-t0-.12,.45,14), out=sstep(t1,t1+.35,t);
@@ -433,7 +435,7 @@ function render(t){
   const S=toS(c,SUN.x,SUN.y);
   if(oA>0){ g.save(); g.globalAlpha=oA*.55; g.strokeStyle=CY; g.lineWidth=2.2; g.setLineDash([10,12]); g.lineDashOffset=-amb*14;
     g.beginPath(); g.arc(S.x,S.y,ORB*c.z,0,6.2832); g.stroke(); g.restore();
-    if(t>T.year5-.05) arcText(t,'1 LAP = 1 YEAR',S.x,S.y,ORB*c.z+6,-Math.PI*.36+amb*.03,26,GOLD,T.year5,oA); }
+    if(t>T.year5-.05) arcText(t,'โคจร 1 รอบ = 1 ปี',S.x,S.y,ORB*c.z+6,-Math.PI*.36+amb*.03,26,GOLD,T.year5,oA); }
   sun(c,amb);
   // Earth
   const ea=orbitA(st), wx=SUN.x+ORB*Math.cos(ea), wy=SUN.y-ORB*Math.sin(ea);
@@ -445,7 +447,7 @@ function render(t){
     g.beginPath(); g.arc(E.x,E.y,rr,rot,rot+Math.PI*1.7); g.stroke(); g.setLineDash([]);
     if(!braked){ const a=rot+Math.PI*1.7; g.fillStyle=CY; g.save(); g.translate(E.x+Math.cos(a)*rr,E.y+Math.sin(a)*rr); g.rotate(a+Math.PI/2); g.beginPath(); g.moveTo(-9,-6); g.lineTo(9,0); g.lineTo(-9,6); g.fill(); g.restore(); }
     g.restore();
-    arcText(t,'1 SPIN = 1 DAY',E.x,E.y,rr+4,-Math.PI*.62+amb*.08,24,CY,T.day5,rA); }
+    arcText(t,'หมุน 1 รอบ = 1 วัน',E.x,E.y,rr+4,-Math.PI*.62+amb*.08,24,CY,T.day5,rA); }
   const nightPulse=(st.b===1&&st.s>T.night)?Math.exp(-(st.s-T.night)*2.2)+.25:0;
   const Lv=globe(E,R,st,amb,nightPulse);
   shock(E,R,st);
@@ -473,25 +475,25 @@ function render(t){
   if(t>T.six-.4&&t<T.relax+.3){ const p=proj(E,R,.26,anchorLon(-.95,SPIN_STOPPED),sp); const lit=(st.b===1)?clamp((Lv[0]*(p.x-E.x)/R+Lv[1]*(E.y-p.y)/R)*2+.5):1;
     const a=win(t,T.six-.4,T.relax+.3,.3,.3); g.save(); g.globalAlpha=a; g.fillStyle=lit>.5?GOLD:'#ff8f4a';
     g.beginPath(); g.arc(p.x,p.y,5,0,6.2832); g.fill(); g.globalAlpha=a*.4; g.beginPath(); g.arc(p.x,p.y,5+7*(.5+.5*Math.sin(amb*5)),0,6.2832); g.fill(); g.restore();
-    g.save(); g.globalAlpha=a; g.fillStyle='rgba(6,20,40,.8)'; const bw=tw('YOU',22,700,4)+30; g.beginPath(); g.roundRect(p.x-bw/2-40,p.y-56,bw,38,19); g.fill(); g.restore();
-    g.save(); g.globalAlpha=a; slideText(t,'YOU',p.x-40,p.y-29,22,GOLD,700,4,T.six-.35,null); g.restore(); mk={x:p.x,y:p.y}; }
+    g.save(); g.globalAlpha=a; g.fillStyle='rgba(6,20,40,.8)'; const bw=tw('คุณ',22,700,4)+30; g.beginPath(); g.roundRect(p.x-bw/2-40,p.y-56,bw,38,19); g.fill(); g.restore();
+    g.save(); g.globalAlpha=a; slideText(t,'คุณ',p.x-40,p.y-29,22,GOLD,700,4,T.six-.35,null); g.restore(); mk={x:p.x,y:p.y}; }
   // callback sign (reality branch)
   const cbP=st.b===2?youSign(t,E,R,sp,.05,anchorLon(-.95,spinC(T.by)),T.by,T.title-.25,null):null;
 
   // ---- screen-space graphics ----
-  counter(t,T.sixteen,T.stand+.05,1500,190,'EQUATOR SPEED',tt=>fmt(1670*easeOutCubic((tt-T.sixteen)/.7))+' KM/H');
-  caption(t,T.wouldnt,R1-.05,[{text:'EVERYTHING ELSE',color:WHITE},{text:'KEEPS GOING',color:CY,t0:T.wouldnt+.12}]);
-  caption(t,R1+.02,T.sixteen-.35,[{text:'RIGHT NOW',color:GOLD}]);
-  caption(t,T.play,T.earth5-.15,[{text:'YOU PRESSED PLAY',color:WHITE},{text:tt=>(EQ_KMS*tt).toFixed(1)+' KM AGO',color:GOLD,t0:T.play+.15}]);
-  caption(t,T.brakes,T.air-.08,[{text:'FULL STOP',color:GOLD}]);
-  counter(t,T.air,T.oceans-.25,1500,190,'WIND SPEED',tt=>fmt(1670*easeOutCubic((tt-T.air)/.6))+' KM/H');
+  counter(t,T.sixteen,T.stand+.05,1500,190,'ความเร็วที่เส้นศูนย์สูตร',tt=>fmt(1670*easeOutCubic((tt-T.sixteen)/.7))+' กม./ชม.');
+  caption(t,T.wouldnt,R1-.05,[{text:'แต่ทุกอย่างบนโลก',color:WHITE},{text:'ยังพุ่งไปต่อ',color:CY,t0:T.wouldnt+.12}]);
+  caption(t,R1+.02,T.sixteen-.35,[{text:'ตอนนี้',color:GOLD}]);
+  caption(t,T.play,T.earth5-.15,[{text:'ตั้งแต่คุณกดเล่น',color:WHITE},{text:tt=>'เดินทางมาแล้ว '+(EQ_KMS*tt).toFixed(1)+' กม.',color:GOLD,t0:T.play+.15}]);
+  caption(t,T.brakes,T.air-.08,[{text:'หยุดสนิท',color:GOLD}]);
+  counter(t,T.air,T.oceans-.25,1500,190,'ความเร็วลม',tt=>fmt(1670*easeOutCubic((tt-T.air)/.6))+' กม./ชม.');
   bars(t);
-  caption(t,T.tornado+.25,T.oceans-.15,[{text:'OVER 3× THE STRONGEST TORNADO',color:CY,size:40}]);
-  caption(t,T.poles,T.oneday-.15,[{text:'OCEANS FLEE TO THE POLES',color:WHITE}]);
-  counter(t,T.oneday,T.relax-.05,1500,190,'ONE DAY LASTS',tt=>fmt(24+8742*easeIO((tt-T.oneday-.25)/(T.year10-T.oneday)))+' H',{color:tt=>tt>T.year10+.1?GOLD:WHITE});
-  caption(t,T.daylight-.05,T.bring-.2,[{text:'6 MONTHS OF DAY',color:GOLD},{text:'6 MONTHS OF NIGHT',color:CY,t0:T.night}]);
-  counter(t,T.slowing,T.by-.15,1500,190,'EACH CENTURY THE DAY GAINS',tt=>'+'+(2*easeOutCubic((tt-T.ms+.2)/.6)).toFixed(1)+' MS');
-  caption(t,T.by+.15,T.end,[{text:'YOU HAVE MOVED',color:WHITE,size:40},{text:tt=>(EQ_KMS*tt).toFixed(1)+' KM',color:tt=>tt>T.km?GOLD:WHITE,t0:T.by+.3}].map(l=>({...l,color:typeof l.color==='function'?l.color(t):l.color})));
+  caption(t,T.tornado+.25,T.oceans-.15,[{text:'แรงกว่าทอร์นาโดที่แรงที่สุด 3 เท่า',color:CY,size:40}]);
+  caption(t,T.poles,T.oneday-.15,[{text:'มหาสมุทรไหลไปรวมที่ขั้วโลก',color:WHITE}]);
+  counter(t,T.oneday,T.relax-.05,1500,190,'หนึ่งวันยาว',tt=>fmt(24+8742*easeIO((tt-T.oneday-.25)/(T.year10-T.oneday)))+' ชม.',{color:tt=>tt>T.year10+.1?GOLD:WHITE});
+  caption(t,T.daylight-.05,T.bring-.2,[{text:'กลางวัน 6 เดือน',color:GOLD},{text:'กลางคืน 6 เดือน',color:CY,t0:T.night}]);
+  counter(t,T.slowing,T.by-.15,1500,190,'ทุก 100 ปี วันยาวขึ้น',tt=>'+'+(2*easeOutCubic((tt-T.ms+.2)/.6)).toFixed(1)+' มิลลิวินาที');
+  caption(t,T.by+.15,T.end,[{text:'คุณเดินทางมาแล้ว',color:WHITE,size:40},{text:tt=>(EQ_KMS*tt).toFixed(1)+' กม.',color:tt=>tt>T.km?GOLD:WHITE,t0:T.by+.3}].map(l=>({...l,color:typeof l.color==='function'?l.color(t):l.color})));
   rewindIcon(t);
   // mascot looks at the point of interest
   const tgt=lookTarget(t,E,R,yP,mk,cbP,S); const P=astroPose(t); const hx=P.x, hy=P.y-160*P.s*.78;
@@ -509,7 +511,7 @@ function bars(t){
   const x=110,y=150, full=640, ob=sstep(t1,t1+.35,t);
   g.save(); g.globalAlpha=1-ob;
   g.fillStyle='rgba(6,20,40,.62)'; capsule(g,x-40,y-60,full+300,250,60); g.fill();
-  const rows=[['STRONGEST TORNADO',484,'484 KM/H','rgb(143,216,230)'],['STOPPED EARTH WIND',1670,'1,670 KM/H','rgb(255,217,138)']];
+  const rows=[['ทอร์นาโดที่แรงที่สุด',484,'484 กม./ชม.','rgb(143,216,230)'],['ลมตอนโลกหยุดหมุน',1670,'1,670 กม./ชม.','rgb(255,217,138)']];
   rows.forEach(([lab,v,txt,col],i)=>{ const yy=y+i*100, u=easeOutQuint((t-t0-.15-i*.35)/.9), w=Math.max(30,full*v/1670*u);
     slideText(t,lab,x,yy-8,22,CY,600,5,t0+.05+i*.35,t1,'left');
     g.fillStyle=col; capsule(g,x,yy+6,w,34,17); g.fill();
@@ -532,13 +534,13 @@ function lookTarget(t,E,R,yP,mk,cbP,S){
 function title(t){
   if(t<T.title) return;
   const u=springStep(t-T.title,.5,12); const y=300;
-  const w1=tw('WHAT IF EARTH',92,700,6), w2=tw('STOPPED SPINNING',92,700,6), bw=Math.max(w1,w2)+130, bh=250;
+  const w1=tw('จะเกิดอะไรขึ้น',92,700,6), w2=tw('ถ้าโลกหยุดหมุน',92,700,6), bw=Math.max(w1,w2)+130, bh=250;
   g.save(); g.globalAlpha=clamp((t-T.title)/.12); g.fillStyle='rgba(6,20,40,.62)'; g.translate(960,y); g.scale(.7+.3*u,.7+.3*u); capsule(g,-bw/2,-bh/2,bw,bh,bh/2); g.fill(); g.restore();
-  slideText(t,'WHAT IF EARTH',960,y-14,92,WHITE,700,6,T.title+.05,null);
-  slideText(t,'STOPPED SPINNING',960,y+88,92,GOLD,700,6,T.title+.22,null);
+  slideText(t,'จะเกิดอะไรขึ้น',960,y-14,92,WHITE,700,6,T.title+.05,null);
+  slideText(t,'ถ้าโลกหยุดหมุน',960,y+88,92,GOLD,700,6,T.title+.22,null);
 }
 function credit(t,t0,t1=null){
-  if(t<t0||(t1!=null&&t>t1+.5)) return; const txt='VIDEO BY KANREN_G', w=tw(txt,24,600,5)+56, x=60, y=1000;
+  if(t<t0||(t1!=null&&t>t1+.5)) return; const txt='วิดีโอโดย KANREN_G', w=tw(txt,24,600,5)+56, x=60, y=1000;
   g.save(); g.globalAlpha=clamp((t-t0)/.15)*(t1==null?1:1-sstep(t1+.05,t1+.4,t)); g.fillStyle='rgba(6,20,40,.62)'; capsule(g,x,y-30,w*(.7+.3*springStep(t-t0,.5,15)),56,28); g.fill(); g.restore();
   slideText(t,txt,x+28,y+8,24,CY,600,5,t0+.05,t1,'left');
 }
@@ -554,7 +556,7 @@ function post(t){
 function renderFrame(t){ const d=0.15/60; render(t-d); ga.drawImage(cv,0,0); render(t+d); g.save(); g.setTransform(1,0,0,1,0,0); g.globalAlpha=.5; g.globalCompositeOperation='source-over'; g.drawImage(acc,0,0); g.restore(); }
 window.render=render; window.renderFrame=renderFrame; window.T=T;
 (async()=>{
-  const ff=new FontFace('Fredoka',`url(data:font/woff2;base64,${FONT_B64})`,{weight:'300 700'}); await ff.load(); document.fonts.add(ff);
+  for(const [fam,b64,wt] of [['Fredoka',FONT_B64,'300 700'],['Mitr',FONT_TH5,'300 650'],['Mitr',FONT_TH6,'651 800']]){const ff=new FontFace(fam,`url(data:font/woff2;base64,${b64})`,{weight:wt}); await ff.load(); document.fonts.add(ff);}
   TEX=makeTextures(); initGL(TEX);
   const q=new URLSearchParams(location.search); if(q.has('render')) document.body.classList.add('render');
   const t0=parseFloat(q.get('t')||'0'); render(t0);
