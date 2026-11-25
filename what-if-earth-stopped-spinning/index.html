@@ -360,7 +360,7 @@ function astronaut(t,st,look){
     if(asleep>.5) rr(cx-8,cy+2,16,4,2,'#8fd8e6'); else { const hh=17*blink; rr(cx-5.5,cy-hh/2,11,Math.max(2,hh),5.5,'#8fd8e6'); } }
   g.restore();
   // sunglasses / sleep mask (story-clock gags: they rewind)
-  const gd=gagDrop(st,T.sunglasses); if(gd!==null){ g.save(); g.translate(0,gd); rr(-36,-174,32,20,8,'#0b1220'); rr(4,-174,32,20,8,'#0b1220'); rr(-6,-168,12,5,2.5,'#0b1220'); rr(-30,-171,10,4,2,'rgba(255,217,138,.7)'); rr(10,-171,10,4,2,'rgba(255,217,138,.7)'); g.restore(); }
+  const gd=gagDrop(st,T.sunglasses); if(gd!==null){ g.save(); g.translate(0,gd); rr(-46,-178,42,26,11,'#0b1220'); rr(4,-178,42,26,11,'#0b1220'); rr(-8,-171,16,6,3,'#0b1220'); rr(-52,-174,10,6,3,'#0b1220'); rr(42,-174,10,6,3,'#0b1220'); rr(-38,-174,14,5,2.5,'rgba(255,217,138,.8)'); rr(12,-174,14,5,2.5,'rgba(255,217,138,.8)'); g.restore(); }
   const md=gagDrop(st,T.mask); if(md!==null){ g.save(); g.translate(0,md); rr(-46,-178,92,26,13,'rgb(220,95,110)'); rr(-34,-171,26,10,5,'rgba(255,255,255,.25)'); rr(8,-171,26,10,5,'rgba(255,255,255,.25)'); g.restore(); }
   // antenna + blinking light
   rr(-3,-232,6,30,3,'#dfe7ef');
@@ -375,7 +375,7 @@ function astroPose(t){
   const base={x:1660,y:850,s:1};
   const k=springStep(t-(T.bring-0.2),.5,9)*(1-springStep(t-T.relax,.5,9));
   const kt=springStep(t-T.title,.5,9);
-  return {x:lerp(base.x,1330,k)+kt*-60, y:lerp(base.y,700,k)+kt*-20, s:lerp(1,1.6,k)};
+  return {x:lerp(base.x,1330,k)+kt*-60, y:lerp(base.y,700,k)+kt*-20, s:lerp(1,1.85,k)};
 }
 
 /* ==== globe overlays ==== */
@@ -420,7 +420,7 @@ function shock(E,R,st){
   g.restore();
 }
 const swell=st=>{const dt=stopDT(st); if(dt<=0) return 0; if(dt<.22) return .06*easeOutCubic(dt/.22); if(dt<.55) return .06*(1-easeInCubic((dt-.22)/.33)); return -.02*springImp(dt-.55,.45,14);};
-const flashA=st=>{const dt=stopDT(st);return dt>0&&dt<1?.7*Math.exp(-dt*6.5):0;};
+const flashA=st=>{const dt=stopDT(st);return dt>0&&dt<1?.42*Math.exp(-dt*9):0;};
 
 /* ==== main render: pure function of t ==== */
 let TEX=null;
@@ -452,7 +452,7 @@ function render(t){
   // annotations on the globe
   equatorLine(E,R,sp,t);
   // push-in light streams
-  latStreaks(E,R,sp,amb,win(t,T.stand-.1,T.stand+1.9,.2,.6),2.2,'rgba(200,245,255,A)');
+  latStreaks(E,R,sp,amb,1.9*win(t,T.stand-.1,T.stand+1.9,.2,.6),2.2,'rgba(200,245,255,A)');
   // "everything on it wouldn't": air keeps going after the opening stop
   if(st.b===0) latStreaks(E,R,sp,st.s,sstep(T.stopped+.1,T.stopped+.6,st.s),1.7,'rgba(255,255,255,A)');
   // wind front after "air": soft-edged (30px) front, ~47px/s far out, accelerating to 700px/s at the planet
@@ -476,7 +476,7 @@ function render(t){
     g.save(); g.globalAlpha=a; g.fillStyle='rgba(6,20,40,.8)'; const bw=tw('YOU',22,700,4)+30; g.beginPath(); g.roundRect(p.x-bw/2-40,p.y-56,bw,38,19); g.fill(); g.restore();
     g.save(); g.globalAlpha=a; slideText(t,'YOU',p.x-40,p.y-29,22,GOLD,700,4,T.six-.35,null); g.restore(); mk={x:p.x,y:p.y}; }
   // callback sign (reality branch)
-  const cbP=st.b===2?youSign(t,E,R,sp,.05,anchorLon(-.95,spinC(T.by)),T.by,T.end+1,null):null;
+  const cbP=st.b===2?youSign(t,E,R,sp,.05,anchorLon(-.95,spinC(T.by)),T.by,T.title-.25,null):null;
 
   // ---- screen-space graphics ----
   counter(t,T.sixteen,T.stand+.05,1500,190,'EQUATOR SPEED',tt=>fmt(1670*easeOutCubic((tt-T.sixteen)/.7))+' KM/H');
@@ -498,6 +498,7 @@ function render(t){
   const dl=Math.hypot(tgt.x-hx,tgt.y-hy)||1; const look={x:(tgt.x-hx)/dl*Math.min(1,dl/220),y:(tgt.y-hy)/dl*Math.min(1,dl/220)};
   astronaut(amb,st,look);
   title(t);
+  credit(t);
   // stop flash
   const fa=flashA(st); if(fa>0){ g.fillStyle=`rgba(255,255,255,${fa})`; g.fillRect(0,0,W,H); }
   post(t);
@@ -534,6 +535,11 @@ function title(t){
   g.save(); g.globalAlpha=clamp((t-T.title)/.12); g.fillStyle='rgba(6,20,40,.62)'; g.translate(960,y); g.scale(.7+.3*u,.7+.3*u); capsule(g,-bw/2,-bh/2,bw,bh,bh/2); g.fill(); g.restore();
   slideText(t,'WHAT IF EARTH',960,y-14,92,WHITE,700,6,T.title+.05,null);
   slideText(t,'STOPPED SPINNING',960,y+88,92,GOLD,700,6,T.title+.22,null);
+}
+function credit(t){
+  const t0=T.title+.9; if(t<t0) return; const txt='VIDEO BY KANREN_G', w=tw(txt,24,600,5)+56, x=60, y=1000;
+  g.save(); g.globalAlpha=clamp((t-t0)/.15); g.fillStyle='rgba(6,20,40,.62)'; capsule(g,x,y-30,w*(.7+.3*springStep(t-t0,.5,15)),56,28); g.fill(); g.restore();
+  slideText(t,txt,x+28,y+8,24,CY,600,5,t0+.05,null,'left');
 }
 /* ==== finishing: vignette + 6% film grain re-randomised 24x/s ==== */
 let vig=null; const grain=document.createElement('canvas'); grain.width=960; grain.height=540; const gg=grain.getContext('2d'); let grainIdx=-1; const gid=gg.createImageData(960,540);

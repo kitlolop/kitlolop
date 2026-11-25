@@ -1,3 +1,6 @@
 build/frames/
 *.onnx
 *.bin
+build/mix_raw.wav
+build/master_audio.wav
+*.mp4
