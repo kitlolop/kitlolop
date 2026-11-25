@@ -498,7 +498,8 @@ function render(t){
   const dl=Math.hypot(tgt.x-hx,tgt.y-hy)||1; const look={x:(tgt.x-hx)/dl*Math.min(1,dl/220),y:(tgt.y-hy)/dl*Math.min(1,dl/220)};
   astronaut(amb,st,look);
   title(t);
-  credit(t);
+  credit(t,.35,T.planet+1.75);
+  credit(t,T.title+.9);
   // stop flash
   const fa=flashA(st); if(fa>0){ g.fillStyle=`rgba(255,255,255,${fa})`; g.fillRect(0,0,W,H); }
   post(t);
@@ -536,10 +537,10 @@ function title(t){
   slideText(t,'WHAT IF EARTH',960,y-14,92,WHITE,700,6,T.title+.05,null);
   slideText(t,'STOPPED SPINNING',960,y+88,92,GOLD,700,6,T.title+.22,null);
 }
-function credit(t){
-  const t0=T.title+.9; if(t<t0) return; const txt='VIDEO BY KANREN_G', w=tw(txt,24,600,5)+56, x=60, y=1000;
-  g.save(); g.globalAlpha=clamp((t-t0)/.15); g.fillStyle='rgba(6,20,40,.62)'; capsule(g,x,y-30,w*(.7+.3*springStep(t-t0,.5,15)),56,28); g.fill(); g.restore();
-  slideText(t,txt,x+28,y+8,24,CY,600,5,t0+.05,null,'left');
+function credit(t,t0,t1=null){
+  if(t<t0||(t1!=null&&t>t1+.5)) return; const txt='VIDEO BY KANREN_G', w=tw(txt,24,600,5)+56, x=60, y=1000;
+  g.save(); g.globalAlpha=clamp((t-t0)/.15)*(t1==null?1:1-sstep(t1+.05,t1+.4,t)); g.fillStyle='rgba(6,20,40,.62)'; capsule(g,x,y-30,w*(.7+.3*springStep(t-t0,.5,15)),56,28); g.fill(); g.restore();
+  slideText(t,txt,x+28,y+8,24,CY,600,5,t0+.05,t1,'left');
 }
 /* ==== finishing: vignette + 6% film grain re-randomised 24x/s ==== */
 let vig=null; const grain=document.createElement('canvas'); grain.width=960; grain.height=540; const gg=grain.getContext('2d'); let grainIdx=-1; const gid=gg.createImageData(960,540);
