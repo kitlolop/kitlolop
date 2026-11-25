@@ -1,7 +1,7 @@
 #!/bin/bash
 # concat near-lossless chunks + mastered audio -> master (CRF 16) and release (CRF 20)
 set -e; cd "$(dirname "$0")/../build"
-printf "file 'frames/chunk0a.mkv'\nfile 'frames/chunk0b.mkv'\nfile 'frames/chunk1.mkv'\nfile 'frames/chunk2.mkv'\n" > frames/list.txt
+printf "file 'chunk0a.mkv'\nfile 'chunk0b.mkv'\nfile 'chunk1.mkv'\nfile 'chunk2.mkv'\n" > frames/list.txt
 for q in 16 20; do
   name=$([ $q = 16 ] && echo master || echo release); ab=$([ $q = 16 ] && echo 320k || echo 192k)
   ffmpeg -v error -y -f concat -safe 0 -i frames/list.txt -i master_audio.wav -map 0:v -map 1:a \
