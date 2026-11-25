@@ -15,7 +15,9 @@ API responses are cached in build/el_cache/ (keyed by request), so re-running `m
 (e.g. with another --fit) does not spend characters again.
 --fit S: if the assembled VO is longer than S seconds, every spoken line is sped up by the
 same factor with ffmpeg atempo (pitch preserved; gaps untouched) and the cue times scaled.
-The animation ends at 60 s and needs ~4.5 s after the VO for the title, so use --fit 55."""
+The animation ends at 60 s and needs ~4.5 s after the VO for the title, so use --fit 55.
+Also writes build/subs_th.srt: each line split at its spaces into cues of <= 34 characters,
+timed from the same character alignment."""
 import base64, hashlib, json, os, subprocess, sys, urllib.request, numpy as np, soundfile as sf
 
 API = 'https://api.elevenlabs.io'
@@ -75,7 +77,7 @@ for li, L in enumerate(LINES):
     RAW.append(tts({k: v for k, v in body.items() if v is not None}))
 
 def assemble(tempo):
-  out, words, t = [np.zeros(int(PREROLL * SR), np.float32)], [], PREROLL
+  out, words, subs, t = [np.zeros(int(PREROLL * SR), np.float32)], [], [], PREROLL
   for li, (L, r) in enumerate(zip(LINES, RAW)):
     a = decode(base64.b64decode(r['audio_base64']), tempo)
     al = r.get('alignment') or r.get('normalized_alignment')
@@ -89,21 +91,32 @@ def assemble(tempo):
         j = next(k for k in range(i, len(chars)) if not chars[k].isspace())
         words.append({'w': key, 'line': li, 's': round(t + st[j] - a0 / SR, 3)})
     seg = a[a0:a1]
+    off = t - a0 / SR
+    cues, pos = [], 0
+    for ph in L['text'].split(' '):
+        i = chars.find(ph, pos); assert i >= 0, (li, ph); pos = i + len(ph)
+        if cues and len(cues[-1][1]) + 1 + len(ph) <= 34: cues[-1][1] += ' ' + ph
+        else: cues.append([off + st[i], ph])
+    end = t + len(seg) / SR
+    for k, (cs, txt) in enumerate(cues):
+        subs.append((max(cs, t), cues[k + 1][0] if k + 1 < len(cues) else end, txt))
     if li: out.append(np.zeros(int(round(L['gap'] * SR)), np.float32))
     out.append(seg); t += len(seg) / SR
-  return np.concatenate(out), words
+  return np.concatenate(out), words, subs
 
 tempo = 1.0
-vo, words = assemble(tempo)
+vo, words, subs = assemble(tempo)
 if FIT and len(vo) / SR > FIT:
     gaps = PREROLL + sum(L['gap'] for L in LINES[1:])
     for _ in range(4):   # atempo + trimming is not exactly linear: refine
         tempo *= (len(vo) / SR - gaps) / (FIT - 0.05 - gaps)
-        vo, words = assemble(tempo)
+        vo, words, subs = assemble(tempo)
         if len(vo) / SR <= FIT: break
 for li in range(len(LINES)):
     print(f"{li:2d}  " + ' '.join(f"{w['w']}@{w['s']:.2f}" for w in words if w['line'] == li))
 sf.write('build/vo_24k.wav', vo, SR)
 json.dump({'duration': round(len(vo) / SR, 3), 'lang': 'th', 'engine': 'elevenlabs', 'voice': voice, 'model': model,
            'tempo': round(tempo, 4), 'words': words}, open('build/words.json', 'w'), ensure_ascii=False, indent=0)
+ts = lambda x: f'{int(x//3600):02d}:{int(x%3600//60):02d}:{int(x%60):02d},{int(round(x%1*1000)) % 1000:03d}'
+open('build/subs_th.srt', 'w').write(''.join(f'{n}\n{ts(a)} --> {ts(b)}\n{txt}\n\n' for n, (a, b, txt) in enumerate(subs, 1)))
 print(f'VO {len(vo)/SR:.2f}s  model {model}  tempo x{tempo:.3f}')
